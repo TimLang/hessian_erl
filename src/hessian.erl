@@ -265,9 +265,9 @@ decode_map(Bin, R) ->
      end;
     is_list(Value) and is_list(hd(Value)) and is_integer(hd(hd(Value))) ->
        Fun = lists:map(fun(A) -> unicode:characters_to_binary(A) end, Value), 
-       decode_map(Rest2, [{CorrectKey, Fun}|R]);
+       decode_map(Rest2, [#{CorrectKey => Fun}|R]);
     true ->
-       decode_map(Rest2, [{CorrectKey,Value}|R])
+       decode_map(Rest2, [#{CorrectKey => Value}|R])
    end.
 
 decode_bin(<<$b, Len:16/unsigned, Rest/binary>>, R) ->
