@@ -17,6 +17,7 @@
 -module(hessian).
 -behaviour(gen_server).
 -author("wanggaoquan@gmail.com").
+-modifiedBy("langyong135@gmail.com").
 
 -export([start/0, start_link/0, stop/0, dispatch/2, dispatch/3, call/3, register_module/2, register_modules/1, register_record/3, register_records/1]).
 -export([behaviour_info/1]).
@@ -248,13 +249,19 @@ decode_map(<<$z, Rest/binary>>, R) ->
 decode_map(Bin, R) ->
 	{Key, Rest} = decode(Bin),
 	{Value, Rest2} = decode(Rest),
-  %decode_map(Rest2, [{Key,Value}|R]).
-  if is_list(Value) ->
-  decode_map(Rest2, [{Key, unicode:characters_to_binary(Value)}|R]);
-  true ->
-       decode_map(Rest2, [{Key,Value}|R])
-       %false
-  end.
+  CorrectValue = try
+                   unicode:characters_to_binary(Value)
+                 catch
+                   error:badarg ->
+                     Value
+                 end,
+  CorrectKey = try
+                 unicode:characters_to_binary(Key)
+               catch
+                 error:badarg ->
+                   Key
+               end,
+  decode_map(Rest2, [{CorrectKey,CorrectValue}|R]).
 
 decode_bin(<<$b, Len:16/unsigned, Rest/binary>>, R) ->
 	<<Bin:Len, Rest2/binary>> = Rest,
