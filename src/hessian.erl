@@ -247,21 +247,28 @@ decode_list(Bin, R) ->
 decode_map(<<$z, Rest/binary>>, R) ->
 	{lists:reverse(R), Rest};
 decode_map(Bin, R) ->
-	{Key, Rest} = decode(Bin),
-	{Value, Rest2} = decode(Rest),
-  CorrectValue = try
-                   unicode:characters_to_binary(Value)
-                 catch
-                   error:badarg ->
-                     Value
-                 end,
+  {Key, Rest} = decode(Bin),
+  {Value, Rest2} = decode(Rest),
+  %decode_map(Rest2, [{Key,Value}|R]).
   CorrectKey = try
                  unicode:characters_to_binary(Key)
                catch
                  error:badarg ->
                    Key
                end,
-  decode_map(Rest2, [{CorrectKey,CorrectValue}|R]).
+  if is_list(Value) and is_integer(hd(Value)) ->
+     try
+       decode_map(Rest2, [{CorrectKey,unicode:characters_to_binary(Value)}|R])
+     catch
+       error:badarg ->
+         Value
+     end;
+    is_list(Value) and is_list(hd(Value)) and is_integer(hd(hd(Value))) ->
+       Fun = lists:map(fun(A) -> unicode:characters_to_binary(A) end, Value), 
+       decode_map(Rest2, [{CorrectKey, Fun}|R]);
+    true ->
+       decode_map(Rest2, [{CorrectKey,Value}|R])
+   end.
 
 decode_bin(<<$b, Len:16/unsigned, Rest/binary>>, R) ->
 	<<Bin:Len, Rest2/binary>> = Rest,
